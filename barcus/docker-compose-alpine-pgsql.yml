@@ -49,8 +49,9 @@ services:
 
   bareos-webui:
     image: barcus/bareos-webui:20-alpine
-    ports:
-      - 8080:9100
+    # If you don't want to use a reverse proxy (not suitable for production!)
+    #ports:
+    #  - 8080:9100
     environment:
       - BAREOS_DIR_HOST=bareos-dir
       - PHP_FPM_HOST=php-fpm
