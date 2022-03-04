@@ -57,14 +57,13 @@ services:
         ipv4_address: "${NETWORK_PREFIX}.4"
 
   bareos-webui:
-    image: barcus/bareos-webui:20
     restart: unless-stopped
+    # Traefik labels are suggested as an example for people using Traefik,
+    # remove them if you are using another reverse proxy.
     labels:
       traefik.enable: 'true'
       traefik.frontend.rule: "Host:${HOSTNAME}"
-      traefik.port: '80'
-    ports:
-      - ${NETWORK_PREFIX}.5:8080:9100
+      traefik.port: '9100'
     volumes:
       - webui_config:/etc/bareos-webui
       - webui_data:/usr/share/bareos-webui
@@ -79,7 +78,7 @@ services:
       - webui_data:/usr/share/bareos-webui
     networks:
       default:
-        ipv4_address: "${NETWORK_PREFIX}.8"
+        ipv4_address: "${NETWORK_PREFIX}.6"
 
   bareos-db:
     restart: unless-stopped
@@ -87,14 +86,14 @@ services:
       - pg_data:/var/lib/postgresql/data
     networks:
       default:
-        ipv4_address: "${NETWORK_PREFIX}.6"
+        ipv4_address: "${NETWORK_PREFIX}.7"
 
   smtpd:
     restart: unless-stopped
     hostname: "smtpd.${HOSTNAME}"
     volumes:
-      - ./docker-volumes/smtpd/_docker_additional_macros:/etc/exim4/_docker_additional_macros
-      - ./docker-volumes/smtpd/exim4.conf.template:/etc/exim4/exim4.conf.template
+      - ../docker-volumes/smtpd/_docker_additional_macros:/etc/exim4/_docker_additional_macros
+      - ../docker-volumes/smtpd/exim4.conf.template:/etc/exim4/exim4.conf.template
     environment:
       RELAY_DOMAINS: ${SMTP_RELAY_DOMAINS}
       SMARTHOST_ADDRESS: ${SMTP_HOSTNAME}
@@ -104,7 +103,7 @@ services:
       SMARTHOST_ALIASES: ${SMTP_ALIASES}
     networks:
       default:
-        ipv4_address: "${NETWORK_PREFIX}.7"
+        ipv4_address: "${NETWORK_PREFIX}.8"
 
 networks:
   web:
