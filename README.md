@@ -44,9 +44,8 @@ The Bareos hostname. Default value: 'bareos.domain.tld'
 
 [Solution Libre](https://www.solution-libre.fr)'s repositories are open projects, and community contributions are essential for keeping them great.
 
-
 [Fork this repo on GitHub](https://github.com/solution-libre/docker-bareos/fork)
 
 ## Contributors
 
-The list of contributors can be found at: https://github.com/solution-libre/docker-bareos/graphs/contributors
+The list of contributors can be found at: <https://github.com/solution-libre/docker-bareos/graphs/contributors>
