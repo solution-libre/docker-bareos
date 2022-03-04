@@ -13,6 +13,10 @@
 
 Docker-compose setup for starting [Bareos](https://www.bareos.com/).
 
+The [main Compose file](https://github.com/solution-libre/docker-bareos/blob/main/barcus/docker-compose-alpine-pgsql.yml),
+which is present in the `barcus` folder, is a copy of the [Barcus](https://github.com/barcus) work that maintains
+great [Docker images of Baroes](https://github.com/barcus/bareos).
+
 ## Setup
 
 ```sh
