@@ -90,10 +90,12 @@ services:
 
   smtpd:
     restart: unless-stopped
+    entrypoint: /usr/local/bin/docker-entrypoint.sh
     hostname: "smtpd.${HOSTNAME}"
     volumes:
       - ../docker-volumes/smtpd/_docker_additional_macros:/etc/exim4/_docker_additional_macros
       - ../docker-volumes/smtpd/exim4.conf.template:/etc/exim4/exim4.conf.template
+      - ../docker-volumes/smtpd/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
     environment:
       RELAY_DOMAINS: ${SMTP_RELAY_DOMAINS}
       SMARTHOST_ADDRESS: ${SMTP_HOSTNAME}
