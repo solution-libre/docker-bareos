@@ -90,16 +90,22 @@ services:
 
   smtpd:
     restart: unless-stopped
+    command: ["exim", "-bd", "-q15m", "-v"]
+    entrypoint: /usr/local/bin/docker-entrypoint.sh
     hostname: "smtpd.${HOSTNAME}"
     volumes:
       - ../docker-volumes/smtpd/_docker_additional_macros:/etc/exim4/_docker_additional_macros
       - ../docker-volumes/smtpd/exim4.conf.template:/etc/exim4/exim4.conf.template
+      - ../docker-volumes/smtpd/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+    secrets:
+      - smtpd-user
+      - smtpd-password
     environment:
       RELAY_DOMAINS: ${SMTP_RELAY_DOMAINS}
       SMARTHOST_ADDRESS: ${SMTP_HOSTNAME}
       SMARTHOST_PORT: ${SMTP_PORT}
-      SMARTHOST_USER: ${SMTP_USERNAME}
-      SMARTHOST_PASSWORD: ${SMTP_PASSWORD}
+      SMARTHOST_USER_FILE: '/run/secrets/smtpd-user'
+      SMARTHOST_PASSWORD_FILE: '/run/secrets/smtpd-password'
       SMARTHOST_ALIASES: ${SMTP_ALIASES}
     networks:
       default:
@@ -115,6 +121,12 @@ networks:
       config:
         - subnet: "${NETWORK_PREFIX}.0/20"
           gateway: "${NETWORK_PREFIX}.1"
+
+secrets:
+  smtpd-user:
+    file: ../.secrets/smtpd_user.secret
+  smtpd-password:
+    file: ../.secrets/smtpd_password.secret
 
 volumes:
   director_config:
