@@ -23,9 +23,12 @@ great [Docker images of Baroes](https://github.com/barcus/bareos).
 cd /opt
 git clone https://github.com/solution-libre/docker-bareos.git bareos
 cd bareos
+cp .secrets.dist .secrets
 ```
 
 Declare environment variables or copy the `.env.dist` to `.env` and adjust its values.
+
+Change the value of the secrets in the `.secrets` folder.
 
 Register a domain like 'bareos.domain.tld'.
 
