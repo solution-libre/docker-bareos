@@ -9,9 +9,10 @@ shopt -s nullglob
 file_env() {
 	local var="$1"
 	local fileVar="${var}_FILE"
+        local varName="${!var@}"
 	local def="${2:-}"
 	if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
-		echo >&2 "error: both ${varName} and ${fileVarName} are set (but are exclusive)"
+		echo >&2 "error: both ${varName} and ${fileVar} are set (but are mutually exclusive)"
 		exit 1
 	fi
 	local val="$def"
