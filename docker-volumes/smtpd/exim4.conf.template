@@ -136,7 +136,7 @@ message_size_limit = MESSAGE_SIZE_LIMIT
 # scanners. The second modification is in the acl_check_data access
 # control list.
 
-# av_scanner = clamd:/var/run/clamav/clamd.ctl
+# av_scanner = clamd:/run/clamav/clamd.ctl
 
 
 # For spam scanning, there is a similar option that defines the interface to
@@ -203,7 +203,11 @@ primary_hostname = MAIN_HARDCODE_PRIMARY_HOSTNAME
 # Enable an efficiency feature.  We advertise the feature; clients
 # may request to use it.  For multi-recipient mails we then can
 # reject or accept per-user after the message is received.
-#
+# This supports recipient-dependent content filtering; without it
+# you have to temp-reject any recipients after the first that have
+# incompatible filtering, and do the filtering in the data ACL.
+# Even with this enabled, you must support the old style for peers
+# not flagging support for PRDR (visible via $prdr_requested).
 prdr_enable = true
 
 # When using an external relay tester (such as rt.njabl.org and/or the
@@ -310,6 +314,13 @@ keep_environment =
 .ifdef MAIN_ADD_ENVIRONMENT
 add_environment = MAIN_ADD_ENVIRONMENT
 .endif
+
+.ifdef _OPT_MAIN_SMTPUTF8_ADVERTISE_HOSTS
+.ifndef MAIN_SMTPUTF8_ADVERTISE_HOSTS
+MAIN_SMTPUTF8_ADVERTISE_HOSTS =
+.endif
+smtputf8_advertise_hosts = MAIN_SMTPUTF8_ADVERTISE_HOSTS
+.endif
 #####################################################
 ### end main/02_exim4-config_options
 #####################################################
@@ -331,6 +342,9 @@ MAIN_TLS_ADVERTISE_HOSTS = *
 .endif
 tls_advertise_hosts = MAIN_TLS_ADVERTISE_HOSTS
 
+.ifdef TLS_ON_CONNECT_PORTS
+    tls_on_connect_ports = TLS_ON_CONNECT_PORTS
+.endif
 
 # Full paths to Certificate and Private Key. The Private Key file
 # must be kept 'secret' and should be owned by root.Debian-exim mode
@@ -393,16 +407,8 @@ tls_verify_hosts = MAIN_TLS_VERIFY_HOSTS
 tls_try_verify_hosts = MAIN_TLS_TRY_VERIFY_HOSTS
 .endif
 
-.ifdef _HAVE_GNUTLS
-tls_dhparam = historic
-.endif
-
 .else
-# Don't advertise TLS if MAIN_TLS_ENABLE is not set.
-tls_advertise_hosts =
-.endif
-.ifdef TLS_ON_CONNECT_PORTS
-    tls_on_connect_ports = TLS_ON_CONNECT_PORTS
+# Use upstream defaults
 .endif
 #####################################################
 ### end main/03_exim4-config_tlsoptions
@@ -644,9 +650,9 @@ acl_check_rcpt:
   # to the smarthost.
   .ifdef CHECK_RCPT_VERIFY_SENDER
   deny
-    message = Sender verification failed
     !acl = acl_local_deny_exceptions
     !verify = sender
+    message = Sender verification failed
   .endif
 
   # Verify senders listed in local_sender_callout with a callout.
@@ -661,6 +667,21 @@ acl_check_rcpt:
                    {}}
     !verify = sender/callout
 
+  .ifndef CHECK_RCPT_NO_FAIL_TOO_MANY_BAD_RCPT
+  # Reject all RCPT commands after too many bad recipients
+  # This is partly a defense against spam abuse and partly attacker abuse.
+  # Real senders should manage, by the time they get to 10 RCPT directives,
+  # to have had at least half of them be real addresses.
+  #
+  # This is a lightweight check and can protect you against repeated
+  # invocations of more heavy-weight checks which would come after it.
+
+  deny    condition     = ${if and {\
+                        {>{$rcpt_count}{10}}\
+                        {<{$recipients_count}{${eval:$rcpt_count/2}}} }}
+          message       = Rejected for too many bad recipients
+          logwrite      = REJECT [$sender_host_address]: bad recipient count high [${eval:$rcpt_count-$recipients_count}]
+  .endif
 
   # Accept if the message comes from one of the hosts for which we are an
   # outgoing relay. It is assumed that such hosts are most likely to be MUAs,
@@ -697,8 +718,9 @@ acl_check_rcpt:
 
   # Insist that a HELO/EHLO was accepted.
 
-  require message	= nice hosts say HELO first
-          condition	= ${if def:sender_helo_name}
+  require
+    condition	= ${if def:sender_helo_name}
+    message	= nice hosts say HELO first
 
   # Insist that any other recipient address that we accept is either in one of
   # our local domains, or is in a domain for which we explicitly allow
@@ -736,12 +758,12 @@ acl_check_rcpt:
   # The explicit white lists are honored as well as negative items in
   # the black list. See exim4-config_files(5) for details.
   deny
-    message = sender envelope address $sender_address is locally blacklisted here. If you think this is wrong, get in touch with postmaster
-    log_message = sender envelope address is locally blacklisted.
     !acl = acl_local_deny_exceptions
     senders = ${if exists{CONFDIR/local_sender_blacklist}\
                    {CONFDIR/local_sender_blacklist}\
                    {}}
+    message = sender envelope address $sender_address is locally blacklisted here. If you think this is wrong, get in touch with postmaster
+    log_message = sender envelope address is locally blacklisted.
 
 
   # deny bad sites (IP address)
@@ -753,12 +775,12 @@ acl_check_rcpt:
   # The explicit white lists are honored as well as negative items in
   # the black list. See exim4-config_files(5) for details.
   deny
-    message = sender IP address $sender_host_address is locally blacklisted here. If you think this is wrong, get in touch with postmaster
-    log_message = sender IP address is locally blacklisted.
     !acl = acl_local_deny_exceptions
     hosts = ${if exists{CONFDIR/local_host_blacklist}\
                  {CONFDIR/local_host_blacklist}\
                  {}}
+    message = sender IP address $sender_host_address is locally blacklisted here. If you think this is wrong, get in touch with postmaster
+    log_message = sender IP address is locally blacklisted.
 
 
   # Warn if the sender host does not have valid reverse DNS.
@@ -777,8 +799,7 @@ acl_check_rcpt:
   .endif
 
 
-  # Use spfquery to perform a pair of SPF checks (for details, see
-  # http://www.openspf.org/)
+  # Use spfquery to perform a pair of SPF checks.
   #
   # This is quite costly in terms of DNS lookups (~6 lookups per mail).  Do not
   # enable if that's an issue.  Also note that if you enable this, you must
@@ -787,13 +808,6 @@ acl_check_rcpt:
   # SPF check" warning.
   .ifdef CHECK_RCPT_SPF
   deny
-    message = [SPF] $sender_host_address is not allowed to send mail from \
-              ${if def:sender_address_domain {$sender_address_domain}{$sender_helo_name}}.  \
-              Please see \
-	      http://www.openspf.org/Why?scope=${if def:sender_address_domain \
-              {mfrom}{helo}};identity=${if def:sender_address_domain \
-              {$sender_address}{$sender_helo_name}};ip=$sender_host_address
-    log_message = SPF check failed.
     !acl = acl_local_deny_exceptions
     condition = ${run{/usr/bin/spfquery.mail-spf-perl --ip \
                    ${quote:$sender_host_address} --identity \
@@ -801,11 +815,14 @@ acl_check_rcpt:
                        {--scope mfrom  --identity ${quote:$sender_address}}\
                        {--scope helo --identity ${quote:$sender_helo_name}}}}\
                    {no}{${if eq {$runrc}{1}{yes}{no}}}}
+    message = [SPF] $sender_host_address is not allowed to send mail from \
+              ${if def:sender_address_domain {$sender_address_domain}{$sender_helo_name}}.
+    log_message = SPF check failed.
 
   defer
-    message = Temporary DNS error while checking SPF record.  Try again later.
     !acl = acl_local_deny_exceptions
     condition = ${if eq {$runrc}{5}{yes}{no}}
+    message = Temporary DNS error while checking SPF record.  Try again later.
 
   warn
     condition = ${if <={$runrc}{6}{yes}{no}}
@@ -820,8 +837,8 @@ acl_check_rcpt:
 				helo=$sender_helo_name
 
   warn
-    log_message = Unexpected error in SPF check.
     condition = ${if >{$runrc}{6}{yes}{no}}
+    log_message = Unexpected error in SPF check.
   .endif
 
 
@@ -907,9 +924,10 @@ acl_check_data:
   # we should never receive one such via SMTP.
   #
   .ifndef IGNORE_SMTP_LINE_LENGTH_LIMIT
-  deny    message    = maximum allowed line length is 998 octets, \
+  deny
+    condition  = ${if > {$max_received_linelength}{998}}
+    message    = maximum allowed line length is 998 octets, \
                        got $max_received_linelength
-          condition  = ${if > {$max_received_linelength}{998}}
   .endif
 
   # Deny if the headers contain badly-formed addresses.
@@ -927,9 +945,9 @@ acl_check_data:
   # one of the "Sender:", "Reply-To:", or "From:" header lines.
   .ifdef CHECK_DATA_VERIFY_HEADER_SENDER
   deny
-    message = No verifiable sender address in message headers
     !acl = acl_local_deny_exceptions
     !verify = header_sender
+    message = No verifiable sender address in message headers
   .endif
 
 
@@ -972,9 +990,9 @@ acl_check_data:
   # Reject spam messages (score >15.0).
   # This breaks mailing list and forward messages.
   # deny
-  #   message = Classified as spam (score $spam_score)
   #   condition = ${if <{$message_size}{120k}{1}{0}}
   #   condition = ${if >{$spam_score_int}{150}{true}{false}}
+  #   message = Classified as spam (score $spam_score)
 
 
   # This hook allows you to hook in your own ACLs without having to
@@ -1080,8 +1098,12 @@ dnslookup_relay_to_domains:
   domains = ! +local_domains : +relay_to_domains
   transport = remote_smtp
   same_domain_copy_routing = yes
-  dnssec_request_domains = *
   no_more
+
+# ignore private rfc1918, loopback, APIPA/link-local, local broadcast, unspecified, unique local, linked-scoped unicast and discard-Only
+.ifndef ROUTER_DNSLOOKUP_IGNORE_TARGET_HOSTS
+ROUTER_DNSLOOKUP_IGNORE_TARGET_HOSTS = <; 0.0.0.0 ; 127.0.0.0/8 ; 192.168.0.0/16 ; 172.16.0.0/12 ; 10.0.0.0/8 ; 169.254.0.0/16 ; 255.255.255.255 ; ::/128 ; ::1/128 ; fc00::/7 ; fe80::/10 ; 100::/64
+.endif
 
 # deliver mail directly to the recipient. This router is only reached
 # for domains that we do not relay for. Since we most probably can't
@@ -1094,11 +1116,7 @@ dnslookup:
   domains = ! +local_domains
   transport = remote_smtp
   same_domain_copy_routing = yes
-  # ignore private rfc1918 and APIPA addresses
-  ignore_target_hosts = 0.0.0.0 : 127.0.0.0/8 : 192.168.0.0/16 :\
-                        172.16.0.0/12 : 10.0.0.0/8 : 169.254.0.0/16 :\
-			255.255.255.255
-  dnssec_request_domains = *
+  ignore_target_hosts = ROUTER_DNSLOOKUP_IGNORE_TARGET_HOSTS
   no_more
 
 .endif
@@ -1299,7 +1317,7 @@ userforward:
   domains = +local_domains
   check_local_user
   file = $home/.forward
-  require_files = $local_part:$home/.forward
+  require_files = $local_part_data:$home/.forward
   no_verify
   no_expn
   check_ancestor
@@ -1337,7 +1355,7 @@ procmail:
   check_local_user
   transport = procmail_pipe
   # emulate OR with "if exists"-expansion
-  require_files = ${local_part}:\
+  require_files = ${local_part_data}:\
                   ${if exists{/etc/procmailrc}\
                     {/etc/procmailrc}{${home}/.procmailrc}}:\
                   +/usr/bin/procmail
@@ -1360,7 +1378,7 @@ maildrop:
   domains = +local_domains
   check_local_user
   transport = maildrop_pipe
-  require_files = ${local_part}:${home}/.mailfilter:+/usr/bin/maildrop
+  require_files = ${local_part_data}:${home}/.mailfilter:+/usr/bin/maildrop
   no_verify
   no_expn
 
@@ -1484,6 +1502,10 @@ REMOTE_SMTP_HELO_DATA==${lookup dnsdb {ptr=$sending_ip_address}{$value}{$primary
 REMOTE_SMTP_HELO_DATA=${lookup dnsdb {ptr=$sending_ip_address}{$value}{$primary_hostname}}
 .endif
 .endif
+
+.ifndef REMOTE_SMTP_SMARTHOST_TLS_VERIFY_HOSTS
+  REMOTE_SMTP_SMARTHOST_TLS_VERIFY_HOSTS = *
+.endif
 #####################################################
 ### end transport/10_exim4-config_transport-macros
 #####################################################
@@ -1546,7 +1568,7 @@ address_reply:
 mail_spool:
   debug_print = "T: appendfile for $local_part@$domain"
   driver = appendfile
-  file = /var/mail/$local_part
+  file = /var/mail/$local_part_data
   delivery_date_add
   envelope_to_add
   return_path_add
@@ -1667,6 +1689,9 @@ remote_smtp:
 .ifdef REMOTE_SMTP_HELO_DATA
   helo_data=REMOTE_SMTP_HELO_DATA
 .endif
+.ifdef REMOTE_SMTP_INTERFACE
+  interface = REMOTE_SMTP_INTERFACE
+.endif
 .ifdef DKIM_DOMAIN
 dkim_domain = DKIM_DOMAIN
 .endif
@@ -1685,6 +1710,9 @@ dkim_strict = DKIM_STRICT
 .ifdef DKIM_SIGN_HEADERS
 dkim_sign_headers = DKIM_SIGN_HEADERS
 .endif
+.ifdef DKIM_TIMESTAMPS
+dkim_timestamps = DKIM_TIMESTAMPS
+.endif
 .ifdef TLS_DH_MIN_BITS
 tls_dh_min_bits = TLS_DH_MIN_BITS
 .endif
@@ -1694,9 +1722,11 @@ tls_certificate = REMOTE_SMTP_TLS_CERTIFICATE
 .ifdef REMOTE_SMTP_PRIVATEKEY
 tls_privatekey = REMOTE_SMTP_PRIVATEKEY
 .endif
-.ifndef REMOTE_SMTP_DISABLE_DANE
-dnssec_request_domains = *
-hosts_try_dane = *
+.ifdef REMOTE_SMTP_HOSTS_REQUIRE_TLS
+  hosts_require_tls = REMOTE_SMTP_HOSTS_REQUIRE_TLS
+.endif
+.ifdef REMOTE_SMTP_TRANSPORTS_HEADERS_REMOVE
+  headers_remove = REMOTE_SMTP_TRANSPORTS_HEADERS_REMOVE
 .endif
 #####################################################
 ### end transport/30_exim4-config_remote_smtp
@@ -1737,6 +1767,12 @@ remote_smtp_smarthost:
 .ifdef REQUIRE_PROTOCOL
     protocol = REQUIRE_PROTOCOL
 .endif
+.ifdef REMOTE_SMTP_SMARTHOST_TLS_VERIFY_CERTIFICATES
+  tls_verify_certificates = REMOTE_SMTP_SMARTHOST_TLS_VERIFY_CERTIFICATES
+.endif
+.ifdef REMOTE_SMTP_SMARTHOST_TLS_VERIFY_HOSTS
+  tls_verify_hosts = REMOTE_SMTP_SMARTHOST_TLS_VERIFY_HOSTS
+.endif
 .ifdef REMOTE_SMTP_HEADERS_REWRITE
   headers_rewrite = REMOTE_SMTP_HEADERS_REWRITE
 .endif
@@ -1754,6 +1790,9 @@ tls_certificate = REMOTE_SMTP_SMARTHOST_TLS_CERTIFICATE
 .endif
 .ifdef REMOTE_SMTP_SMARTHOST_PRIVATEKEY
 tls_privatekey = REMOTE_SMTP_SMARTHOST_PRIVATEKEY
+.endif
+.ifdef REMOTE_SMTP_TRANSPORTS_HEADERS_REMOVE
+  headers_remove = REMOTE_SMTP_TRANSPORTS_HEADERS_REMOVE
 .endif
 #####################################################
 ### end transport/30_exim4-config_remote_smtp_smarthost
@@ -2010,13 +2049,13 @@ begin authenticators
 
 # This is now the (working!) example from
 # http://www.exim.org/eximwiki/FAQ/Policy_controls/Q0730
-# Possible pitfall: access rights on /var/run/courier/authdaemon/socket.
+# Possible pitfall: access rights on /run/courier/authdaemon/socket.
 # plain_courier_authdaemon:
 #   driver = plaintext
 #   public_name = PLAIN
 #   server_condition = \
 #     ${extract {ADDRESS} \
-#               {${readsocket{/var/run/courier/authdaemon/socket} \
+#               {${readsocket{/run/courier/authdaemon/socket} \
 #               {AUTH ${strlen:exim\nlogin\n$auth2\n$auth3\n}\nexim\nlogin\n$auth2\n$auth3\n} }} \
 #               {yes} \
 #               fail}
@@ -2031,7 +2070,7 @@ begin authenticators
 #   server_prompts = Username:: : Password::
 #   server_condition = \
 #     ${extract {ADDRESS} \
-#               {${readsocket{/var/run/courier/authdaemon/socket} \
+#               {${readsocket{/run/courier/authdaemon/socket} \
 #               {AUTH ${strlen:exim\nlogin\n$auth1\n$auth2\n}\nexim\nlogin\n$auth1\n$auth2\n} }} \
 #               {yes} \
 #               fail}
