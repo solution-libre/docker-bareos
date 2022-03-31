@@ -89,14 +89,12 @@ services:
         ipv4_address: "${NETWORK_PREFIX}.7"
 
   smtpd:
+    image: ixdotai/smtp
     restart: unless-stopped
-    command: ["exim", "-bd", "-q15m", "-v"]
-    entrypoint: /usr/local/bin/docker-entrypoint.sh
     hostname: "smtpd.${HOSTNAME}"
     volumes:
       - ../docker-volumes/smtpd/_docker_additional_macros:/etc/exim4/_docker_additional_macros
       - ../docker-volumes/smtpd/exim4.conf.template:/etc/exim4/exim4.conf.template
-      - ../docker-volumes/smtpd/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
     secrets:
       - smtpd-user
       - smtpd-password
