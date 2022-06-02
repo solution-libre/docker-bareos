@@ -84,8 +84,9 @@ services:
 
   bareos-api:
     image: barcus/bareos-api:21
-    ports:
-    - 8000:8000
+    # If you don't want to use a reverse proxy (not suitable for production!)
+    #ports:
+    #- 8000:8000
     environment:
     - BAREOS_DIR_HOST=bareos-dir
 
