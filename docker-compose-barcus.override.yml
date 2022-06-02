@@ -95,6 +95,10 @@ services:
       traefik.enable: 'true'
       traefik.frontend.rule: "Host:api.${HOSTNAME}"
       traefik.port: '8000'
+    networks:
+      web:
+      default:
+        ipv4_address: "${NETWORK_PREFIX}.9"
 
   smtpd:
     image: ixdotai/smtp
