@@ -11,7 +11,7 @@
 
 ## Description
 
-Docker-compose setup for starting [Bareos](https://www.bareos.com/).
+Docker-compose setup for starting [Bareos](https://www.bareos.com/) with [Træfik](https://traefik.io/).
 
 The [main Compose file](https://github.com/solution-libre/docker-bareos/blob/main/barcus/docker-compose-alpine-pgsql.yml),
 which is present in the `barcus` folder, is a copy of the [Barcus](https://github.com/barcus) work that maintains
