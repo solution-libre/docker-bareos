@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- markdownlint-configure-file { "MD024": { "allow_different_nesting": true } } -->
 
+## [2.0.0] 2022-06-09
+
+### Added
+
+- Add API service
+- Script to merge Barcus work
+
+### Changed
+
+- Upgrade Bareos to the version 21
+
 ## [1.1.1] 2022-06-09
 
 ### Added
