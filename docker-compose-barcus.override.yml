@@ -7,8 +7,8 @@ services:
       - director_config:/etc/bareos
       - director_data:/var/lib/bareos # required for MyCatalog backup
     environment:
-      - DB_INIT=true
-      - DB_UPDATE=true
+      - DB_INIT=true #should be 'true' if bareos db does not exist
+      - DB_UPDATE=false
       - DB_HOST=bareos-db
       - DB_PORT=5432
       - DB_NAME=${DB_NAME}
@@ -50,7 +50,6 @@ services:
       - director_config:/etc/bareos-director:ro
       - director_data:/var/lib/bareos-director:ro # required for MyCatalog backup
       - storage_config:/etc/bareos-storage:ro
-      - storage_data:/var/lib/bareos-storage:ro
       - webui_config:/etc/bareos-webui:ro
     networks:
       default:
@@ -87,6 +86,19 @@ services:
     networks:
       default:
         ipv4_address: "${NETWORK_PREFIX}.7"
+
+  bareos-api:
+    restart: unless-stopped
+    # Traefik labels are suggested as an example for people using Traefik,
+    # remove them if you are using another reverse proxy.
+    labels:
+      traefik.enable: 'true'
+      traefik.frontend.rule: "Host:api.${HOSTNAME}"
+      traefik.port: '8000'
+    networks:
+      web:
+      default:
+        ipv4_address: "${NETWORK_PREFIX}.9"
 
   smtpd:
     image: ixdotai/smtp
