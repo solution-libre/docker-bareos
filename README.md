@@ -1,5 +1,6 @@
 # Bareos with Docker Compose
 
+<!-- markdownlint-disable-next-line MD001 -->
 #### Table of Contents
 
 1. [Description](#description)
@@ -11,7 +12,7 @@
 
 ## Description
 
-Docker-compose setup for starting [Bareos](https://www.bareos.com/).
+Docker-compose setup for starting [Bareos](https://www.bareos.com/) with [Træfik](https://traefik.io/).
 
 The [main Compose file](https://github.com/solution-libre/docker-bareos/blob/main/barcus/docker-compose-alpine-pgsql.yml),
 which is present in the `barcus` folder, is a copy of the [Barcus](https://github.com/barcus) work that maintains
@@ -49,7 +50,8 @@ The Bareos hostname. Default value: 'bareos.domain.tld'
 
 ## Development
 
-[Solution Libre](https://www.solution-libre.fr)'s repositories are open projects, and community contributions are essential for keeping them great.
+[Solution Libre](https://www.solution-libre.fr)'s repositories are open projects,
+and community contributions are essential for keeping them great.
 
 [Fork this repo on GitHub](https://github.com/solution-libre/docker-bareos/fork)
 
