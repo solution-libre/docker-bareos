@@ -12,11 +12,12 @@
 
 ## Description
 
-Docker-compose setup for starting [Bareos](https://www.bareos.com/) with [Træfik](https://traefik.io/).
+[Docker Compose](https://docs.docker.com/compose/) setup for starting [Bareos](https://www.bareos.com/)
+with [Træfik](https://traefik.io/).
 
 The [main Compose file](https://github.com/solution-libre/docker-bareos/blob/main/barcus/docker-compose-alpine-pgsql.yml),
-which is present in the `barcus` folder, is a copy of the [Barcus](https://github.com/barcus) work that maintains
-great [Docker images of Baroes](https://github.com/barcus/bareos).
+which is present in the `barcus` folder, is a copy of the [Marc Benslahdine](https://github.com/barcus) work that
+maintains great [Docker images of Baroes](https://github.com/barcus/bareos).
 
 ## Setup
 
@@ -37,7 +38,7 @@ Register a domain like 'bareos.domain.tld'.
 
 ```sh
 cd /opt/bareos
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Reference
