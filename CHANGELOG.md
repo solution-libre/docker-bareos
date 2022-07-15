@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- markdownlint-configure-file { "MD024": { "allow_different_nesting": true } } -->
 
+## [3.0.0] 2022-07-15
+
+### Added
+
+- Add [Dependabot](https://github.com/dependabot) in CI.
+
+### Changed
+
+- Upgrade to [Træfik](https://traefik.io/) [v2](https://doc.traefik.io/traefik/migration/v1-to-v2/) syntax.
+
 ## [2.0.0] 2022-06-09
 
 ### Added
