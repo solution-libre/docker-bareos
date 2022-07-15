@@ -61,8 +61,10 @@ services:
     # remove them if you are using another reverse proxy.
     labels:
       traefik.enable: 'true'
-      traefik.frontend.rule: "Host:${HOSTNAME}"
-      traefik.port: '9100'
+      traefik.http.routers.bareos-webui.entrypoints: websecure
+      traefik.http.routers.bareos-webui.rule: "Host(`${HOSTNAME}`)"
+      traefik.http.routers.bareos-webui.tls.certresolver: myresolver   
+      traefik.http.services.bareos-webui.loadbalancer.server.port: 9100
     volumes:
       - webui_config:/etc/bareos-webui
       - webui_data:/usr/share/bareos-webui
@@ -93,8 +95,10 @@ services:
     # remove them if you are using another reverse proxy.
     labels:
       traefik.enable: 'true'
-      traefik.frontend.rule: "Host:api.${HOSTNAME}"
-      traefik.port: '8000'
+      traefik.http.routers.bareos-api.entrypoints: websecure
+      traefik.http.routers.bareos-api.rule: "Host(`api.${HOSTNAME}`)"
+      traefik.http.routers.bareos-api.tls.certresolver: myresolver   
+      traefik.http.services.bareos-api.loadbalancer.server.port: 8000
     networks:
       web:
       default:
