@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Reafcto script to merge Barcus work.
+- Script to merge Barcus work refacto
 - Rename the `docker-compose.*.yml` files to `compose.*.yaml`
+- Rename the `docker-volumes` folder to `volumes`
 
 ### Fixed
 
