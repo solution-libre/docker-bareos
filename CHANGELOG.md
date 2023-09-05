@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reafcto script to merge Barcus work.
 - Rename the `docker-compose.*.yml` files to `compose.*.yaml`
 
+### Fixed
+
+- Exim config with updated SMTPd image
+
 ## [3.0.0] 2022-07-15
 
 ### Added

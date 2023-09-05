@@ -47,6 +47,8 @@ cd "${CWD}" || exit
 git remote add barcus "/tmp/${DIR}"
 git fetch barcus
 git rebase barcus/master
+git reset -- LICENSE
+git checkout LICENSE 
 
 git remote remove barcus
 rm -rf "/tmp/${DIR}"
