@@ -8,16 +8,16 @@ cmd_check() {
   if ! command -v "$cmd" > /dev/null
   then
     echo "$cmd is require and could not be found. Please install it."
-    exit
+    exit 1
   fi
 }
 
 cmd_check 'git'
 
-if ! git filter-repo --version > /dev/null
+if ! git filter-repo --version > /dev/null 2>&1
 then
     echo "git-filter-repo is require and could not be found. Please install it."
-    exit
+    exit 2
 fi
 
 cd /tmp || exit
@@ -27,22 +27,26 @@ cd "${DIR}" || exit
 
 git remote rm origin
 
-git filter-repo --force --path LICENSE --path docker-compose-alpine-pgsql.yml
+git filter-repo --force\
+  --path-rename LICENSE:barcus/LICENSE\
+  --path-rename docker-compose-alpine-pgsql.yml:barcus/compose.yaml\
+
+git filter-repo --force\
+  --path barcus
 
 git reset --hard
 git gc --aggressive 
 git prune
 git clean -fd
 
-mkdir barcus
-git mv LICENSE docker-compose-alpine-pgsql.yml barcus
-git commit -m 'move to a subdir'
+git add barcus
+git commit -m 'Adjustments of Barcus files'
 
 cd "${CWD}" || exit
 
 git remote add barcus "/tmp/${DIR}"
-git merge barcus/master
-git reset -- LICENSE
-git checkout LICENSE 
+git fetch barcus
+git rebase barcus/master
 
+git remote remove barcus
 rm -rf "/tmp/${DIR}"

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- markdownlint-configure-file { "MD024": { "allow_different_nesting": true } } -->
 
+## [3.1.0] 2023-09-05
+
+### Changed
+
+- Reafcto script to merge Barcus work.
+- Rename the `docker-compose.*.yml` files to `compose.*.yaml`
+
 ## [3.0.0] 2022-07-15
 
 ### Added
@@ -80,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Docker-compose setup for starting Bareos with Træfik
 
+[3.1.0]: https://github.com/solution-libre/docker-bareos/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/solution-libre/docker-bareos/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/solution-libre/docker-bareos/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/solution-libre/docker-bareos/compare/v1.1.0...v1.1.1
