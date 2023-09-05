@@ -122,8 +122,8 @@ services:
       - smtpd-user
       - smtpd-password
     volumes:
-      - ../docker-volumes/smtpd/_docker_additional_macros:/etc/exim4/_docker_additional_macros
-      - ../docker-volumes/smtpd/exim4.conf.template:/etc/exim4/exim4.conf.template
+      - ../volumes/smtpd/_docker_additional_macros:/etc/exim4/_docker_additional_macros
+      - ../volumes/smtpd/exim4.conf.template:/etc/exim4/exim4.conf.template
 
 volumes:
   client_config:
